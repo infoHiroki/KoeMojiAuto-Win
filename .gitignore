@@ -1,0 +1,46 @@
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# User configuration
+config.json
+
+# Processing results
+processed_files.json
+
+# Logs
+koemoji.log
+*.log
+
+# Audio files
+input/
+!input/.gitkeep
+
+# Output files
+output/
+!output/.gitkeep
+
+# Test files
+test_input/
+test_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
