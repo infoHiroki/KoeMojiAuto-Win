@@ -25,7 +25,7 @@ IS_WINDOWS = platform.system() == 'Windows'
 logging.basicConfig(
     filename='koemoji.log',
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M'
 )
 logger = logging.getLogger("KoemojiAuto")
@@ -49,29 +49,13 @@ class KoemojiProcessor:
         """設定ファイルを読み込む"""
         try:
             if not os.path.exists(self.config_path):
-                # 初回使用時：フォルダ指定を求める
-                print("初回設定を行います。")
-                
-                # 入力フォルダの設定
-                while True:
-                    input_folder = input("入力フォルダのパスを入力してください: ").strip()
-                    if input_folder:
-                        input_folder = os.path.expanduser(input_folder)
-                        break
-                    print("入力が必要です。")
-                
-                # 出力フォルダの設定
-                while True:
-                    output_folder = input("出力フォルダのパスを入力してください: ").strip()
-                    if output_folder:
-                        output_folder = os.path.expanduser(output_folder)
-                        break
-                    print("入力が必要です。")
+                # 初回使用時：デフォルト値を設定
+                logger.info("設定ファイルが見つからないため、デフォルト設定を使用します。")
                 
                 # デフォルト設定を作成
                 self.config = {
-                    "input_folder": input_folder,
-                    "output_folder": output_folder,
+                    "input_folder": "input",
+                    "output_folder": "output",
                     "archive_folder": "archive",
                     "scan_interval_minutes": 30,
                     "max_concurrent_files": 3,
@@ -83,13 +67,13 @@ class KoemojiProcessor:
                 # 設定を保存
                 with open(self.config_path, 'w', encoding='utf-8') as f:
                     json.dump(self.config, f, indent=2, ensure_ascii=False)
-                logger.info(f"⚙️  設定を作成しました: {self.config_path}")
+                logger.info(f"設定を作成しました: {self.config_path}")
                 print(f"\n設定が保存されました: {self.config_path}")
             else:
                 # 既存の設定を読み込み
                 with open(self.config_path, 'r', encoding='utf-8') as f:
                     self.config = json.load(f)
-                logger.info(f"⚙️  設定を読み込みました: {self.config_path}")
+                logger.info(f"設定を読み込みました: {self.config_path}")
                 
                 # 設定値の検証
                 self.validate_config()
@@ -99,12 +83,12 @@ class KoemojiProcessor:
                 folder_path = self.config.get(folder_key)
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path, exist_ok=True)
-                    logger.info(f"📁 {folder_key}を作成しました: {folder_path}")
+                    logger.info(f"{folder_key}を作成しました: {folder_path}")
                     
             # レポートフォルダの作成（不要になったため削除）
                     
         except Exception as e:
-            logger.error(f"❌ 設定の読み込み中にエラーが発生しました: {e}")
+            logger.error(f"設定の読み込み中にエラーが発生しました: {e}")
             # 最小限のデフォルト設定
             self.config = {
                 "input_folder": "input",
@@ -188,13 +172,13 @@ class KoemojiProcessor:
                 }
                 
                 self.processing_queue.append(file_info)
-                logger.info(f"➕ キューに追加: {file_name}")
+                logger.info(f"キューに追加: {file_name}")
                 
             
-            logger.info(f"📋 現在のキュー: {len(self.processing_queue)}件")
+            logger.info(f"現在のキュー: {len(self.processing_queue)}件")
             
         except Exception as e:
-            logger.error(f"❌ キュースキャン中にエラーが発生しました: {e}")
+            logger.error(f"キュースキャン中にエラーが発生しました: {e}")
     
     def process_queued_files(self):
         """キューにあるファイルを処理"""
@@ -217,7 +201,7 @@ class KoemojiProcessor:
             max_cpu = self.config.get("max_cpu_percent", 95)
             
             if cpu_percent > max_cpu:
-                logger.info(f"⏸️  CPU使用率が高すぎるため、処理を延期します: {cpu_percent}%")
+                logger.info(f"CPU使用率が高すぎるため、処理を延期します: {cpu_percent}%")
                 return
             
             # 処理するファイル数を決定
@@ -236,7 +220,7 @@ class KoemojiProcessor:
                 self.process_file(file_path, model_size)
         
         except Exception as e:
-            logger.error(f"❌ キュー処理中にエラーが発生しました: {e}")
+            logger.error(f"キュー処理中にエラーが発生しました: {e}")
     
     def process_file(self, file_path, model_size=None):
         """ファイルを処理する"""
@@ -244,13 +228,13 @@ class KoemojiProcessor:
         try:
             # ファイルが存在するか確認
             if not os.path.exists(file_path):
-                logger.warning(f"⚠️  ファイルが存在しません: {file_path}")
+                logger.warning(f"ファイルが存在しません: {file_path}")
                 return
             
             # 処理中リストに追加
             self.files_in_process.add(file_path)
             file_name = os.path.basename(file_path)
-            logger.info(f"🔄 ファイル処理開始: {file_name} (モデル: {model_size})")
+            logger.info(f"ファイル処理開始: {file_name} (モデル: {model_size})")
             
             # 文字起こし処理を実行
             transcription = self.transcribe_audio(file_path, model_size)
@@ -272,7 +256,7 @@ class KoemojiProcessor:
                 
                 # 処理時間を計算
                 processing_time = time.time() - start_time
-                logger.info(f"✅ 文字起こし完了: {file_name} -> {output_file} (処理時間: {processing_time:.2f}秒)")
+                logger.info(f"文字起こし完了: {file_name} -> {output_file} (処理時間: {processing_time:.2f}秒)")
                 
                 # アーカイブフォルダに移動
                 archive_folder = self.config.get("archive_folder", "archive")
@@ -280,30 +264,30 @@ class KoemojiProcessor:
                 
                 archive_path = os.path.join(archive_folder, file_name)
                 shutil.move(file_path, archive_path)
-                logger.info(f"📦 アーカイブ: {file_name} -> {archive_path}")
+                logger.info(f"アーカイブ: {file_name} -> {archive_path}")
                 
                 # 通知
                 self.send_notification(
-                    "✅ Koemoji文字起こし完了",
+                    "Koemoji文字起こし完了",
                     f"ファイル: {file_name}\n出力: {output_file}\n処理時間: {processing_time:.2f}秒"
                 )
             else:
-                logger.error(f"❌ 文字起こし失敗: {file_name}")
+                logger.error(f"文字起こし失敗: {file_name}")
                 
                 
                 # エラー通知
                 self.send_notification(
-                    "❌ Koemoji文字起こしエラー",
+                    "Koemoji文字起こしエラー",
                     f"ファイル: {file_name}\n処理に失敗しました。"
                 )
         
         except Exception as e:
-            logger.error(f"❌ ファイル処理中にエラーが発生しました: {file_path} - {e}")
+            logger.error(f"ファイル処理中にエラーが発生しました: {file_path} - {e}")
             
             
             # エラー通知
             self.send_notification(
-                "❌ Koemoji処理エラー",
+                "Koemoji処理エラー",
                 f"ファイル: {os.path.basename(file_path)}\nエラー: {e}"
             )
         finally:
@@ -327,7 +311,7 @@ class KoemojiProcessor:
             # モデルが未ロードか設定が変わった場合のみ再ロード
             if (self._whisper_model is None or 
                 self._model_config != (model_size, compute_type)):
-                logger.info(f"🧠 Whisperモデルをロード中: {model_size}")
+                logger.info(f"Whisperモデルをロード中: {model_size}")
                 self._whisper_model = WhisperModel(model_size, compute_type=compute_type)
                 self._model_config = (model_size, compute_type)
             
@@ -348,7 +332,7 @@ class KoemojiProcessor:
             return "\n".join(transcription)
         
         except Exception as e:
-            logger.error(f"❌ 文字起こし処理中にエラーが発生しました: {e}")
+            logger.error(f"文字起こし処理中にエラーが発生しました: {e}")
             return None
     
     def send_notification(self, title, message):
@@ -382,33 +366,25 @@ class KoemojiProcessor:
     def run(self):
         """メイン処理ループ"""
         try:
-            # Windows用PIDファイル作成
-            if IS_WINDOWS:
-                try:
-                    with open('koemoji.pid', 'w') as f:
-                        f.write(str(os.getpid()))
-                except Exception as e:
-                    logger.warning(f"PIDファイルの作成に失敗しました: {e}")
-            
             # 既に実行中かチェック
             if self.is_already_running():
-                logger.error("⚠️  既に別のKoemojiAutoプロセスが実行中です。")
+                logger.error("既に別のKoemojiAutoプロセスが実行中です。")
                 self.send_notification(
-                    "⚠️  KoemojiAutoエラー",
+                    "KoemojiAutoエラー",
                     "既に別のプロセスが実行中です。"
                 )
                 return
             
-            logger.info("🚀 KoemojiAuto処理を開始しました")
+            logger.info("KoemojiAuto処理を開始しました")
             
             # 開始通知
             self.send_notification(
-                "🎙️ KoemojiAuto",
+                "KoemojiAuto",
                 "自動文字起こしサービスが開始されました"
             )
             
             # 24時間連続モードで動作
-            logger.info("♾️  24時間連続モードで動作します")
+            logger.info("24時間連続モードで動作します")
             
             scan_interval = self.config.get("scan_interval_minutes", 30) * 60  # 秒に変換
             last_scan_time = 0
@@ -435,18 +411,11 @@ class KoemojiProcessor:
                 time.sleep(5)
             
         except KeyboardInterrupt:
-            logger.info("📛 停止シグナルを受信しました")
+            logger.info("停止シグナルを受信しました")
         except Exception as e:
-            logger.error(f"❌ 処理中にエラーが発生しました: {e}")
+            logger.error(f"処理中にエラーが発生しました: {e}")
         finally:
-            # Windows用PIDファイル削除
-            if IS_WINDOWS and os.path.exists('koemoji.pid'):
-                try:
-                    os.remove('koemoji.pid')
-                except Exception as e:
-                    logger.warning(f"PIDファイルの削除に失敗しました: {e}")
-            
-            logger.info("👋 KoemojiAutoを終了しました")
+            logger.info("KoemojiAutoを終了しました")
 
 
 # 実行例
@@ -455,7 +424,7 @@ if __name__ == "__main__":
     
     # シグナルハンドラーの設定
     def signal_handler(sig, frame):
-        logger.info("📛 停止シグナルを受信しました")
+        logger.info("停止シグナルを受信しました")
         sys.exit(0)
     
     signal.signal(signal.SIGTERM, signal_handler)

@@ -1,13 +1,13 @@
 @echo off
-echo KoeMoji WebUIを起動しています...
+echo Starting KoeMojiAuto WebUI...
 
-:: WebUIをバックグラウンドで起動
-start /b pythonw webui.py
+:: Open browser in background after a delay
+start /b cmd /c "timeout /t 5 /nobreak > nul && start http://localhost:8080"
 
-:: サーバーが起動するまで少し待機
-timeout /t 3 /nobreak > nul
+:: Minimize this window
+powershell -window minimized -command ""
 
-:: デフォルトブラウザでWebUIを開く
-start http://localhost:8080
-
-echo WebUIが起動しました。ブラウザで http://localhost:8080 が開かれます。
+:: Start Python in the current window
+echo Starting server...
+echo To stop the server, press Ctrl+C
+python webui.py

@@ -4,6 +4,7 @@ import subprocess
 import os
 import json
 import psutil
+import time  # 追加: timeモジュールをインポート
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static')
@@ -14,9 +15,9 @@ def is_running():
         try:
             cmdline = proc.info.get('cmdline')
             if cmdline and len(cmdline) > 1:
-                if 'python' in cmdline[0].lower() or 'python3' in cmdline[0].lower():
+                if 'python' in cmdline[0].lower() or 'python3' in cmdline[0].lower() or 'pythonw' in cmdline[0].lower():
                     for arg in cmdline[1:]:
-                        if arg == 'main.py' or arg.endswith('/main.py'):
+                        if arg == 'main.py' or arg.endswith('/main.py') or arg.endswith('\\main.py'):
                             return True
         except:
             pass
@@ -290,7 +291,7 @@ def index():
                     
                     if (data.running) {
                         statusDiv.className = 'status running';
-                        statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> <span>ステータス: 実行中 (PID: ' + data.pid + ')</span>';
+                        statusDiv.innerHTML = '<i class="fas fa-check-circle"></i> <span>ステータス: 実行中</span>';
                         
                         // 実行中は開始ボタンを無効化、停止ボタンを有効化
                         startBtn.disabled = true;
@@ -414,30 +415,15 @@ def index():
     </script>
 </body>
 </html>
-    ''')
+''')
 
 @app.route('/status')
-
 def status():
     """ステータス取得"""
     running = is_running()
-    pid = None
-    if running:
-        for proc in psutil.process_iter(['pid', 'cmdline']):
-            try:
-                cmdline = proc.info.get('cmdline')
-                if cmdline and len(cmdline) > 1:
-                    if 'python' in cmdline[0].lower() or 'python3' in cmdline[0].lower():
-                        for arg in cmdline[1:]:
-                            if arg == 'main.py' or arg.endswith('/main.py'):
-                                pid = proc.pid
-                                break
-            except:
-                pass
-    return jsonify({"running": running, "pid": pid})
+    return jsonify({"running": running})
 
 @app.route('/config', methods=['GET', 'POST'])
-
 def config():
     """設定の取得・更新"""
     if request.method == 'GET':
@@ -450,15 +436,13 @@ def config():
         return jsonify({"status": "updated"})
 
 @app.route('/start', methods=['POST'])
-
 def start():
     """KoemojiAuto開始"""
-    script = './start_koemoji.sh' if os.name != 'nt' else 'start_koemoji.bat'
+    script = 'start_koemoji.bat'  # Windows版
     subprocess.run([script])
     return jsonify({"status": "started"})
 
 @app.route('/stop', methods=['POST'])
-
 def stop():
     """KoemojiAuto停止"""
     script = './stop_koemoji.sh' if os.name != 'nt' else 'stop_koemoji.bat'
@@ -474,15 +458,33 @@ def stop():
     })
 
 @app.route('/log')
-
 def log():
     """ログ取得（最新30行）"""
     try:
-        with open('koemoji.log', 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            return ''.join(lines[-30:])
-    except:
-        return "ログファイルが見つかりません"
+        log_path = 'koemoji.log'
+        if not os.path.exists(log_path):
+            return "ログファイルが見つかりません：" + log_path
+            
+        # 複数のエンコーディングを試す
+        encodings = ['utf-8', 'shift-jis', 'cp932', 'euc-jp']
+        last_error = None
+        
+        for encoding in encodings:
+            try:
+                with open(log_path, 'r', encoding=encoding) as f:
+                    lines = f.readlines()
+                    if not lines:
+                        return "ログファイルは空です"
+                    result = ''.join(lines[-30:])
+                    return result
+            except UnicodeDecodeError as e:
+                last_error = f"エンコーディング {encoding} でのデコードに失敗: {str(e)}"
+                continue
+        
+        # すべてのエンコーディングが失敗した場合
+        return f"ログファイルの読み込みに失敗しました: {last_error}"
+    except Exception as e:
+        return f"ログファイルの読み込み中にエラーが発生しました: {str(e)}"
 
 
 if __name__ == '__main__':
