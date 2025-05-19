@@ -1,5 +1,7 @@
 # KoemojiAuto - 自動文字起こしシステム
 
+*最終更新: 2025年5月19日*
+
 音声・動画ファイルから自動で文字起こしを行うクロスプラットフォーム対応ツールです。
 Whisperモデルを使用した高精度な文字起こしを、WebUIから簡単に操作できます。
 
@@ -327,11 +329,13 @@ A: 手動で再度実行する必要があります（自動起動機能は削�
 
 ### プロセスが停止しない場合
 ```bash
-# 通常の停止
+# 通常の停止方法を試す
 ./stop_koemoji.sh   # macOS/Linux
 stop_koemoji.bat    # Windows
 
-# プロセスを直接停止（最終手段）
+# 上記で停止しない場合、WebUIから停止ボタンを使用
+
+# それでも停止しない場合（最終手段）
 pkill -f "python.*main.py"  # Unix/macOS
 taskkill /F /IM python.exe  # Windows（すべてのPythonプロセスが停止するので注意）
 ```

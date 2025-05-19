@@ -2,6 +2,12 @@
 echo KoemojiAuto Status
 echo ==================
 
+:: 停止フラグの確認
+if exist stop_koemoji.flag (
+    echo Status: Stopping (stop flag detected)
+    goto :EOF
+)
+
 :: プロセスの確認
 set RUNNING=0
 for /f "tokens=2" %%p in ('tasklist /fi "imagename eq python.exe" /fo list ^| findstr "PID:"') do (

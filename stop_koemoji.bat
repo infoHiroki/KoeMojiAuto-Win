@@ -1,13 +1,11 @@
 @echo off
-echo Stopping KoemojiAuto...
+echo KoemojiAutoに停止信号を送信しています...
 
-:: PythonでKoemojiAutoプロセスを終了
-for /f "tokens=2" %%p in ('tasklist /fi "imagename eq python.exe" /fo list ^| findstr "PID:"') do (
-    wmic process %%p get commandline | findstr "main.py" > nul
-    if not errorlevel 1 (
-        taskkill /F /PID %%p
-        echo Terminated PID: %%p
-    )
-)
+rem 停止フラグファイルを作成
+echo 1 > stop_koemoji.flag
 
+echo 停止フラグを作成しました。
+echo プログラムは次のサイクルで終了します（最大5秒）
+
+timeout /t 5 /nobreak > nul
 echo Done

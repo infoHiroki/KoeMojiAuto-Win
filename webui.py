@@ -11,6 +11,13 @@ app = Flask(__name__, static_folder='static')
 
 def is_running():
     """KoeMojiAutoが実行中か確認"""
+    # 停止フラグが存在する場合は停止中と判断
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    stop_flag_path = os.path.join(base_dir, "stop_koemoji.flag")
+    if os.path.exists(stop_flag_path):
+        return False
+    
+    # プロセスの確認
     for proc in psutil.process_iter(['pid', 'cmdline']):
         try:
             cmdline = proc.info.get('cmdline')
@@ -445,17 +452,30 @@ def start():
 @app.route('/stop', methods=['POST'])
 def stop():
     """KoemojiAuto停止"""
-    script = './stop_koemoji.sh' if os.name != 'nt' else 'stop_koemoji.bat'
-    result = subprocess.run([script], capture_output=True, text=True)
-    
-    # 停止処理の完了を確認
-    time.sleep(1)  # 停止処理が完了するまで少し待つ
-    
-    return jsonify({
-        "status": "stopped",
-        "output": result.stdout,
-        "error": result.stderr
-    })
+    try:
+        # 停止フラグファイルを作成
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        stop_flag_path = os.path.join(base_dir, "stop_koemoji.flag")
+        
+        with open(stop_flag_path, 'w') as f:
+            f.write('1')
+        
+        # プロセスが停止するまで最大10秒待機
+        max_wait = 10
+        for i in range(max_wait):
+            if not is_running():
+                break
+            time.sleep(1)
+        
+        return jsonify({
+            "status": "stopped" if not is_running() else "stopping",
+            "message": "停止処理を開始しました。プログラムは次のサイクルで終了します。" 
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
 
 @app.route('/log')
 def log():

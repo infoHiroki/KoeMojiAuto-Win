@@ -366,6 +366,10 @@ class KoemojiProcessor:
     def run(self):
         """メイン処理ループ"""
         try:
+            # 停止フラグファイルのパスを設定（カレントディレクトリを基準）
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            stop_flag_path = os.path.join(base_dir, "stop_koemoji.flag")
+            
             # 既に実行中かチェック
             if self.is_already_running():
                 logger.error("既に別のKoemojiAutoプロセスが実行中です。")
@@ -374,6 +378,11 @@ class KoemojiProcessor:
                     "既に別のプロセスが実行中です。"
                 )
                 return
+            
+            # 起動時に古い停止フラグを削除
+            if os.path.exists(stop_flag_path):
+                os.remove(stop_flag_path)
+                logger.info("古い停止フラグを削除しました")
             
             logger.info("KoemojiAuto処理を開始しました")
             
@@ -395,9 +404,12 @@ class KoemojiProcessor:
             
             # メインループ（24時間動作）
             while True:
+                # 停止フラグを確認
+                if os.path.exists(stop_flag_path):
+                    logger.info("停止フラグが検出されました。処理を終了します")
+                    break
+                
                 current_time = time.time()
-                
-                
                 
                 # 定期的にファイルをスキャン
                 if current_time - last_scan_time >= scan_interval:
@@ -407,7 +419,7 @@ class KoemojiProcessor:
                 # キューのファイルを処理
                 self.process_queued_files()
                 
-                # 短い待機
+                # 短い待機（フラグファイルチェックの頻度も兼ねる）
                 time.sleep(5)
             
         except KeyboardInterrupt:
@@ -415,6 +427,11 @@ class KoemojiProcessor:
         except Exception as e:
             logger.error(f"処理中にエラーが発生しました: {e}")
         finally:
+            # 終了時にフラグファイルを削除
+            if 'stop_flag_path' in locals() and os.path.exists(stop_flag_path):
+                os.remove(stop_flag_path)
+                logger.info("停止フラグを削除しました")
+            
             logger.info("KoemojiAutoを終了しました")
 
 
