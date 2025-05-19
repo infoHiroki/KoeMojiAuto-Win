@@ -315,6 +315,10 @@ class KoemojiProcessor:
                 self._whisper_model = WhisperModel(model_size, compute_type=compute_type)
                 self._model_config = (model_size, compute_type)
             
+            # ファイル名を取得（ログ表示用）
+            file_name = os.path.basename(file_path)
+            logger.info(f"文字起こし開始: {file_name}")
+            
             # 文字起こし実行
             segments, info = self._whisper_model.transcribe(
                 file_path,
@@ -326,8 +330,18 @@ class KoemojiProcessor:
             
             # セグメントをテキストに結合
             transcription = []
+            segment_count = 0
+            
             for segment in segments:
+                segment_count += 1
                 transcription.append(segment.text.strip())
+                
+                # 10セグメントごとに進捗をログに記録
+                if segment_count % 10 == 0:
+                    logger.info(f"文字起こし進行中: {file_name} - {segment_count}セグメント処理済み")
+            
+            # 完了ログ
+            logger.info(f"文字起こし完了: {file_name} - 合計{segment_count}セグメント")
             
             return "\n".join(transcription)
         
