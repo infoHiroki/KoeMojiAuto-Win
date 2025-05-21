@@ -1,8 +1,8 @@
-# KoemojiAuto - 自動文字起こしシステム
+# KoemojiAuto-win - Windows用自動文字起こしシステム
 
-*最終更新: 2025年5月19日*
+*最終更新: 2025年5月21日*
 
-音声・動画ファイルから自動で文字起こしを行うクロスプラットフォーム対応ツールです。
+音声・動画ファイルから自動で文字起こしを行うWindows専用ツールです。
 Whisperモデルを使用した高精度な文字起こしを、WebUIから簡単に操作できます。
 
 ## 使い方
@@ -17,8 +17,7 @@ Whisperモデルを使用した高精度な文字起こしを、WebUIから簡�
    ### 推奨: WebUIで実行
    ```bash
    # WebUI起動
-   ./start_webui.sh  # macOS/Linux
-   start_webui.bat   # Windows
+   start_webui.bat
    ```
    ブラウザで http://localhost:8080 にアクセス
    
@@ -30,51 +29,36 @@ Whisperモデルを使用した高精度な文字起こしを、WebUIから簡�
 
    ### その他の実行方法
    
-   <details>
-   <summary>コマンドラインで実行（スクリプト連携向け）</summary>
-   
+   **コマンドラインで実行（スクリプト連携向け）**
    ```bash
    # 実行
-   ./start_koemoji.sh  # macOS/Linux
-   start_koemoji.bat   # Windows
+   start_koemoji.bat
 
    # 停止
-   ./stop_koemoji.sh   # macOS/Linux
-   stop_koemoji.bat    # Windows
+   stop_koemoji.bat
 
    # ステータス確認
-   ./status_koemoji.sh # macOS/Linux
-   status_koemoji.bat  # Windows
+   status_koemoji.bat
    ```
-   </details>
    
-   <details>
-   <summary>Pythonで直接実行（開発・デバッグ用）</summary>
-   
+   **Pythonで直接実行（開発・デバッグ用）**
    ```bash
-   python3 main.py
+   python main.py
    ```
    ※ フォアグラウンドで実行（ターミナルを閉じると停止）
-   </details>
 
 3. **文字起こし結果を確認**
    ```
    outputフォルダに text ファイルが生成される
    ```
 
-## コマンド一覧
-
-詳細は[COMMANDS.md](COMMANDS.md)を参照してください。
-
 ## 主な機能
 
 - **高精度文字起こし**: Whisperモデル（tiny/small/medium/large）を選択可能
-- **バックグラウンド実行**: 起動後はターミナルを閉じても動作継続
 - **連続実行**: 24時間継続的にファイルを監視・処理
 - **ファイルスキャン**: 30分毎にinputフォルダをスキャンして新しいファイルを自動処理
-- **シンプルな管理**: TUI（ターミナルUI）で簡単設定・操作
+- **シンプルな管理**: WebUIで簡単設定・操作
 - **安全な制御**: 実行・停止・ステータス確認コマンド
-- **クロスプラットフォーム**: Windows/macOS/Linux対応
 - **同時実行制御**: 複数プロセスの同時実行を防止
 - **ログ記録**: 処理完了やエラーの詳細をログファイルに記録
 - **処理済みファイル管理**: 一度処理したファイルは自動的にスキップ
@@ -85,37 +69,43 @@ Whisperモデルを使用した高精度な文字起こしを、WebUIから簡�
 
 ### 1. 必要な環境
 
+- Windows 10/11
 - Python 3.9以上
 - FFmpeg（音声・動画処理用）
 
 ### 2. セットアップ
 
 ```bash
-# リポジトリをクローン
-git clone https://github.com/infoHiroki/KoeMojiAuto.git
-cd KoeMojiAuto
+# リポジトリをクローンまたはZIPをダウンロード
+git clone https://github.com/infoHiroki/KoeMojiAuto-win.git
+cd KoeMojiAuto-win
 
 # 依存関係をインストール
 pip install -r requirements.txt
 
-# FFmpegをインストール（OSに応じて）
-# macOS: brew install ffmpeg
-# Ubuntu: sudo apt install ffmpeg
-# Windows: 公式サイトからダウンロード
+# FFmpegをインストール
+# 公式サイトからダウンロードしてインストールするか、以下を実行
+install.bat
 ```
 
 ### 3. WebUIを起動
 
 ```bash
-# macOS/Linux
-./start_webui.sh
-
-# Windows
 start_webui.bat
 ```
 
 ブラウザで http://localhost:8080 を開いて使用開始！
 
+## パス指定について
+
+設定ファイルでパスを指定する場合は以下の形式が利用できます：
+
+1. **相対パス**: `output` （カレントディレクトリからの相対パス）
+2. **絶対パス**: `C:\Users\Username\Documents\出力フォルダ`
+3. **UNCパス**: `\\ServerName\SharedFolder\出力フォルダ`
+
+**注意**: 日本語パスを使用する場合は、プログラムが適切にエンコーディングを処理しますが、
+トラブルを避けるためにASCII文字のみのパスを使用することを推奨します。
 
 ## 設定ファイル
 
@@ -134,6 +124,12 @@ start_webui.bat
 }
 ```
 
+## セキュリティ情報
+
+- WebUIはデフォルトで認証機能がありません。信頼されたネットワーク内でのみ使用してください。
+- Windowsファイアウォールでポート8080の接続を制限することを推奨します。
+- 処理する音声・動画ファイルは権限のあるフォルダのみを使用してください。
+
 ## トラブルシューティング
 
 ### WebUIにアクセスできない場合
@@ -151,33 +147,14 @@ start_webui.bat
 - max_concurrent_filesを減らす
 - max_cpu_percentを下げる
 
-
-
 ## 動作モード
 
 ### 24時間連続モード
 一度起動すると、停止するまで継続的にファイルを監視・処理します。
 
-## 設定
+## 設定項目の詳細
 
-`config.json` で詳細な設定が可能：
-
-```json
-{
-    "input_folder": "input",              // 入力フォルダ（音声・動画ファイルを置く場所）
-    "output_folder": "output",            // 出力フォルダ（文字起こしファイルの保存先）
-    "scan_interval_minutes": 30,          // ファイルスキャン間隔（分）
-    "max_concurrent_files": 3,            // 同時処理ファイル数
-    "whisper_model": "large",             // Whisperモデルサイズ
-    "language": "ja",                     // 言語設定
-    "compute_type": "int8",               // 計算精度
-    "max_cpu_percent": 80                 // CPU使用率上限（%）
-}
-```
-
-### 主要設定項目の詳細
-
-#### Whisperモデルサイズ
+### Whisperモデルサイズ
 処理速度と精度のバランスを選択：
 
 | モデル | サイズ | 精度 | 速度 | 推奨用途 |
@@ -187,7 +164,7 @@ start_webui.bat
 | medium | 769MB  | ★★★★☆ | ★★★☆☆ | 高品質バランス |
 | large  | 1550MB | ★★★★★ | ★★☆☆☆ | 最高精度（推奨） |
 
-#### 計算精度（compute_type）とスペック目安
+### 計算精度（compute_type）とスペック目安
 メモリ使用量とパフォーマンスのバランス：
 
 | 設定 | メモリ使用 | 速度 | 推奨環境 |
@@ -201,24 +178,18 @@ start_webui.bat
 - **float16**: GPU（特にNVIDIA）で最も効率的。GPUメモリが必要
 - **float32**: 最高精度だが処理速度は遅い。研究用途向け
 
-faster-whisperはCPUとGPU両方に対応していますが、GPU使用にはCUDA対応のNVIDIA GPUが必要です。
+### GPU対応について
 
-**OS別のGPU対応状況:**
-- **Windows**: NVIDIA GPUがあれば自動的に使用（CUDA要インストール）
-- **Linux**: NVIDIA GPUがあれば自動的に使用（CUDA要インストール）
-- **macOS**: Apple Siliconの場合はCPUのみ（Metal/MPSは未対応）
+**Windows上でのGPU対応:**
+- NVIDIA GPUをお持ちの場合は自動的に使用されます（CUDA要インストール）
+- CUDA環境のセットアップ:
+  1. NVIDIA CUDAツールキットをインストール（公式サイトから）
+  2. cuDNNをインストール
+  3. `pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121`
 
-**CUDA環境のセットアップ:**
-```bash
-# Windows/Linux でGPUを使用する場合
-# 1. NVIDIA CUDAツールキットをインストール
-# 2. cuDNNをインストール
-# 3. PyTorchのGPU版をインストール（自動でインストールされる場合もある）
-```
+### 推奨設定例
 
-#### 推奨設定例
-
-**CPU環境（macOS/GPUなしのWindows・Linux）**:
+**CPU環境（GPUなしのWindows）**:
 ```json
 {
     "whisper_model": "medium",
@@ -256,12 +227,14 @@ faster-whisperはCPUとGPU両方に対応していますが、GPU使用にはCUD
 ## フォルダ構成
 
 ```
-KoeMojiAuto/
+KoeMojiAuto-win/
 ├── input/              # 音声・動画ファイルを配置
 ├── output/             # 文字起こし結果（.txt）
+├── archive/            # 処理済みファイル保存場所
 ├── config.json         # 設定ファイル
 ├── koemoji.log         # 実行ログ
-└── processed_files.json # 処理済みファイルリスト
+├── *.bat               # 起動・停止用バッチファイル
+└── static/             # WebUI用素材
 ```
 
 ## よくある質問（FAQ）
@@ -279,10 +252,10 @@ A: `config.json`で以下を調整：
 - `compute_type`: GPUがある場合は "float16"
 
 ### Q: 特定のファイルだけ再処理したい
-A: `processed_files.json`から該当ファイルのエントリを削除
+A: inputフォルダに戻して次回の処理を待つか、UI上で停止→開始
 
 ### Q: 起動しているか確認したい
-A: `./status_koemoji.sh`（macOS/Linux）または `status_koemoji.bat`（Windows）を実行
+A: UI上で開始していてターミナルウィンドウが閉じられていなければ起動している
 
 ### Q: 処理がすぐに始まらない
 A: 以下を確認：
@@ -291,7 +264,7 @@ A: 以下を確認：
 - ファイル形式が対応しているか
 
 ### Q: 文字起こしの精度を上げたい
-A: `whisper_model`を`large`に設定（デフォルト）。ただし処理時間は長くなります
+A: `whisper_model`を`large`に設定（デフォルト）。ただし処理時間は長くなります。音声自体のクオリティも影響します。
 
 ### Q: メモリ不足エラーが出る
 A: 以下を試してください：
@@ -306,7 +279,7 @@ A: `config.json`の`language`を変更：
 - 自動検出: `"auto"`（処理時間増加）
 
 ### Q: ログファイルが大きくなりすぎた
-A: 自動でローテーションされます（10MBで5ファイル保持）。手動削除も可能
+A: 手動削除可能
 
 ### Q: 処理完了の通知について
 A: KoemojiAutoの通知はログファイルに記録される仕様です。
@@ -314,43 +287,36 @@ A: KoemojiAutoの通知はログファイルに記録される仕様です。
 - 画面への通知（通知センター、ポップアップ等）は表示されません
 - 処理状況の確認方法：
   ```bash
-  # リアルタイムで確認
-  tail -f koemoji.log | grep "通知:"
+  # PowerShellで確認
+  Get-Content koemoji.log -Wait | Select-String "通知:"
   
-  # 処理完了のみ確認
-  tail -f koemoji.log | grep "文字起こし完了"
+  # コマンドプロンプトで確認
+  type koemoji.log | findstr "文字起こし完了"
   ```
-- TUIの`[l] ログ表示`からも確認できます
-
-### Q: 再起動後に処理を再開したい
-A: 手動で再度実行する必要があります（自動起動機能は削除されました）
 
 ## トラブルシューティング
 
 ### プロセスが停止しない場合
-```bash
-# 通常の停止方法を試す
-./stop_koemoji.sh   # macOS/Linux
-stop_koemoji.bat    # Windows
+# 通常の停止方法
+WebUIから停止ボタンを使用
 
-# 上記で停止しない場合、WebUIから停止ボタンを使用
+# 上記で停止しない場合
+```bash
+stop_koemoji.bat
 
 # それでも停止しない場合（最終手段）
-pkill -f "python.*main.py"  # Unix/macOS
-taskkill /F /IM python.exe  # Windows（すべてのPythonプロセスが停止するので注意）
+taskkill /F /IM python.exe  # すべてのPythonプロセスが停止するので注意
 ```
 
 ### ログの確認
-```bash
-# 最新のログを表示
-tail -n 50 koemoji.log  # Unix/macOS
-Get-Content koemoji.log -Tail 50  # Windows PowerShell
-```
+koemoji.logを確認する。
 
 ### リセット方法
+processed_files.jsonを削除する。
+
 ```bash
 # 処理済みファイルリストをクリア
-rm processed_files.json
+del processed_files.json
 ```
 
 ## 開発者向け

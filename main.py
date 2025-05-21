@@ -46,7 +46,7 @@ class KoemojiProcessor:
     
     
     def load_config(self):
-        """設定ファイルを読み込む"""
+        """設定ファイルを読み込む（エンコーディング問題に対応）"""
         try:
             if not os.path.exists(self.config_path):
                 # 初回使用時：デフォルト値を設定
@@ -65,15 +65,45 @@ class KoemojiProcessor:
                     "max_cpu_percent": 95
                 }
                 # 設定を保存
-                with open(self.config_path, 'w', encoding='utf-8') as f:
-                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+                self.save_config()
                 logger.info(f"設定を作成しました: {self.config_path}")
                 print(f"\n設定が保存されました: {self.config_path}")
             else:
-                # 既存の設定を読み込み
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    self.config = json.load(f)
-                logger.info(f"設定を読み込みました: {self.config_path}")
+                # 複数のエンコーディングを試行
+                encodings = ['utf-8', 'shift-jis', 'cp932', 'euc-jp']
+                config_loaded = False
+                
+                for encoding in encodings:
+                    try:
+                        with open(self.config_path, 'r', encoding=encoding) as f:
+                            self.config = json.load(f)
+                        logger.info(f"設定を読み込みました（{encoding}）: {self.config_path}")
+                        config_loaded = True
+                        
+                        # 読み込み成功したら、パスを正規化して UTF-8 で保存し直す
+                        self.normalize_paths()
+                        self.save_config()
+                        break
+                    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                        logger.debug(f"{encoding}でのデコード失敗: {e}")
+                        continue
+                
+                if not config_loaded:
+                    logger.error("設定ファイルを読み込めませんでした。デフォルト設定を使用します。")
+                    # デフォルト設定
+                    self.config = {
+                        "input_folder": "input",
+                        "output_folder": "output",
+                        "archive_folder": "archive", 
+                        "scan_interval_minutes": 30,
+                        "max_concurrent_files": 3,
+                        "whisper_model": "large",
+                        "language": "ja",
+                        "compute_type": "int8",
+                        "max_cpu_percent": 95
+                    }
+                    # 設定を保存
+                    self.save_config()
                 
                 # 設定値の検証
                 self.validate_config()
@@ -100,23 +130,66 @@ class KoemojiProcessor:
             }
     
     def validate_config(self):
-        """設定値の妥当性をチェック（簡素化版）"""
-        # 必須項目のみチェック
-        required_fields = ["input_folder", "output_folder", "whisper_model", "language"]
-        missing = [f for f in required_fields if f not in self.config]
-        if missing:
-            raise ValueError(f"必須設定が不足: {missing}")
-        
-        # 不正な値はデフォルトに置換
-        defaults = {
+        """設定値の妥当性をチェック（必須項目がない場合はデフォルト値を設定）"""
+        # 必須項目とデフォルト値を設定
+        required_defaults = {
+            "input_folder": "input",
+            "output_folder": "output", 
+            "whisper_model": "large",
+            "language": "ja",
+            "archive_folder": "archive",
             "scan_interval_minutes": 30,
             "max_concurrent_files": 3,
             "max_cpu_percent": 95,
             "compute_type": "int8"
         }
-        for key, default in defaults.items():
+        
+        # 必須項目がない場合はデフォルト値を設定
+        for key, default in required_defaults.items():
             if key not in self.config:
+                logger.warning(f"必須設定 '{key}' が見つかりません。デフォルト値 '{default}' を使用します。")
                 self.config[key] = default
+        
+        # 設定更新後、再保存
+        self.save_config()
+                
+    def normalize_paths(self):
+        """パス設定を正規化する"""
+        path_keys = ["input_folder", "output_folder", "archive_folder"]
+        
+        for key in path_keys:
+            if key in self.config:
+                try:
+                    # パスオブジェクトに変換して正規化
+                    path = Path(self.config[key]).resolve()
+                    # 文字列に戻す（これによりプラットフォームに適したパス区切り文字が使用される）
+                    self.config[key] = str(path)
+                    logger.debug(f"パスを正規化: {key} = {self.config[key]}")
+                except Exception as e:
+                    logger.warning(f"パスの正規化に失敗: {key} = {self.config[key]}, エラー: {e}")
+    
+    def save_config(self):
+        """設定ファイルを保存（UTF-8で確実に保存）"""
+        try:
+            # 保存前に必要な変換処理
+            config_to_save = self.config.copy()
+            
+            # 一時ファイルに書き込み
+            temp_path = f"{self.config_path}.tmp"
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                json.dump(config_to_save, f, indent=2, ensure_ascii=False)
+            
+            # 成功したら元のファイルを置き換え
+            if os.path.exists(temp_path):
+                if os.path.exists(self.config_path):
+                    os.remove(self.config_path)
+                os.rename(temp_path, self.config_path)
+                logger.info(f"設定ファイルを保存しました: {self.config_path}")
+            
+        except Exception as e:
+            logger.error(f"設定の保存中にエラーが発生しました: {e}")
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.remove(temp_path)
     
     
     

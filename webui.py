@@ -6,6 +6,7 @@ import json
 import psutil
 import time  # 追加: timeモジュールをインポート
 from datetime import datetime
+from pathlib import Path
 
 app = Flask(__name__, static_folder='static')
 
@@ -31,17 +32,60 @@ def is_running():
     return False
 
 def load_config():
-    """設定ファイルを読み込む"""
-    try:
-        with open('config.json', 'r') as f:
-            return json.load(f)
-    except:
-        return {}
+    """設定ファイルを読み込む（複数エンコーディング対応）"""
+    config_path = 'config.json'
+    # 複数のエンコーディングを試行
+    encodings = ['utf-8', 'shift-jis', 'cp932', 'euc-jp']
+    
+    for encoding in encodings:
+        try:
+            with open(config_path, 'r', encoding=encoding) as f:
+                config = json.load(f)
+                
+                # 成功したらUTF-8で保存し直す
+                try:
+                    # パス値を正規化
+                    path_keys = ["input_folder", "output_folder", "archive_folder"]
+                    for key in path_keys:
+                        if key in config:
+                            try:
+                                # パスオブジェクトに変換して正規化
+                                path = Path(config[key]).resolve()
+                                # 文字列に戻す
+                                config[key] = str(path)
+                            except:
+                                pass
+                
+                    # UTF-8で保存
+                    save_config(config)
+                except:
+                    pass
+                
+                return config
+        except:
+            continue
+    
+    # すべてのエンコーディングが失敗した場合
+    return {}
 
 def save_config(config):
-    """設定ファイルを保存"""
-    with open('config.json', 'w') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+    """設定ファイルを保存（UTF-8エンコーディング）"""
+    try:
+        # 一時ファイルに書き込み
+        temp_path = 'config.json.tmp'
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        
+        # 成功したら元のファイルを置き換え
+        if os.path.exists(temp_path):
+            config_path = 'config.json'
+            if os.path.exists(config_path):
+                os.remove(config_path)
+            os.rename(temp_path, config_path)
+    except Exception as e:
+        print(f"設定の保存中にエラーが発生しました: {e}")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 @app.route('/favicon.ico')
 def favicon():
